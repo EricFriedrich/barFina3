@@ -1,65 +1,55 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, Button} from 'react-native';
+import axios from 'axios';
 
 const App = () => {
-  const [menuAlimentos, setMenuAlimentos] = useState([]);
-  const [menuBebidas, setMenuBebidas] = useState([]);
+  const [mesas, setMesas] = useState([]);
 
   useEffect(() => {
-    fetchMenuAlimentos();
-    fetchMenuBebidas();
+    obtenerMesas();
   }, []);
 
-  const fetchMenuAlimentos = async () => {
+  const obtenerMesas = async () => {
     try {
-      const response = await fetch('http://10.0.2.2:3000/menu');
-      const data = await response.json();
-      setMenuAlimentos(data);
+      const response = await axios.get('http://10.0.2.2:3000/mesas');
+      setMesas(response.data);
     } catch (error) {
-      console.error('Error al obtener el menú de alimentos:', error);
+      console.error('Error al obtener las mesas:', error);
     }
   };
 
-  const fetchMenuBebidas = async () => {
+  const reservarMesa = async numeroMesa => {
     try {
-      const response = await fetch('http://10.0.2.2:3000/bebidas');
-      const data = await response.json();
-      setMenuBebidas(data);
+      await axios.put(`http://10.0.2.2:3000/reservar-mesa/${numeroMesa}`);
+      obtenerMesas(); // Actualizar la lista de mesas después de la reserva
     } catch (error) {
-      console.error('Error al obtener el menú de bebidas:', error);
+      console.error('Error al reservar la mesa:', error);
     }
   };
 
-  const verMenuAlimentos = () => {
-    console.log(menuAlimentos);
-  };
-
-  const verMenuBebidas = () => {
-    console.log(menuBebidas);
-  };
-
-  const renderMenu = (menu: any[]) => {
-    return menu.map((item, index) => (
-      <View key={index} style={{marginBottom: 10}}>
-        <Text>Nombre: {item.nombre}</Text>
-        <Text>Precio: {item.precio}</Text>
-        <Text>Categoría: {item.categoria}</Text>
-      </View>
-    ));
+  const liberarMesa = async (numeroMesa) => {
+    try {
+      await axios.put(`http://10.0.2.2:3000/liberar-mesa/${numeroMesa}`);
+      obtenerMesas(); // Actualizar la lista de mesas después de la liberación
+    } catch (error) {
+      console.error('Error al liberar la mesa:', error);
+    }
   };
 
   return (
-    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-      <View style={{marginBottom: 20}}>
-        <Text>Menú Alimentos</Text>
-        <Button title="Ver Menú Alimentos" onPress={verMenuAlimentos} />
-        <View style={{marginTop: 20}}>{renderMenu(menuAlimentos)}</View>
-      </View>
-      <View>
-        <Text>Menú Bebidas</Text>
-        <Button title="Ver Menú Bebidas" onPress={verMenuBebidas} />
-        <View style={{marginTop: 20}}>{renderMenu(menuBebidas)}</View>
-      </View>
+    <View>
+      <Text>Lista de Mesas</Text>
+      {mesas.map((mesa) => (
+        <View key={mesa.numero}>
+          <Text>{`Mesa ${mesa.numero}: ${mesa.estado}`}</Text>
+          {mesa.estado === 'libre' && (
+            <Button title="Reservar" onPress={() => reservarMesa(mesa.numero)} />
+          )}
+          {mesa.estado === 'reservada' && (
+            <Button title="Liberar" onPress={() => liberarMesa(mesa.numero)} />
+          )}
+        </View>
+      ))}
     </View>
   );
 };
